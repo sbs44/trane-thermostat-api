@@ -1,7 +1,7 @@
 /**
- * Main HTTP client for Nexia API
+ * Main HTTP client for Trane API
  * Handles authentication, device discovery, and API communication
- * Replaces the Python NexiaHome class functionality
+ * Replaces the Python TraneHome class functionality
  */
 
 import { BrandType, BRAND_URLS, API_ENDPOINTS, HTTP_STATUS } from '../types/constants';
@@ -9,14 +9,14 @@ import {
   HouseData,
   ThermostatData,
   AutomationData,
-  NexiaClientConfig,
+  TraneClientConfig,
   UpdateOptions
 } from '../types/api';
-import { INexiaClient, ITraneThermostat, INexiaAutomation } from '../types/interfaces';
+import { ITraneClient, ITraneThermostat, ITraneAutomation } from '../types/interfaces';
 import { HttpClient, createHttpClient } from '../utils/http-utils';
 import { AuthManager, AuthConfig } from './auth';
-import { NexiaThermostat } from '../devices/nexia-thermostat';
-import { NexiaAutomation } from '../devices/nexia-automation';
+import { TraneThermostat } from '../devices/trane-thermostat';
+import { TraneAutomation } from '../devices/trane-automation';
 import {
   AuthenticationError,
   SessionExpiredError,
@@ -25,20 +25,20 @@ import {
 } from '../utils/errors';
 import { GeneralValidator } from '../utils/validation';
 
-export class NexiaClient implements INexiaClient {
+export class TraneClient implements ITraneClient {
   private readonly httpClient: HttpClient;
   private readonly authManager: AuthManager;
-  private readonly config: NexiaClientConfig;
+  private readonly config: TraneClientConfig;
 
   private _houseId?: number;
   // House name is stored for potential future use
   private _houseName?: string;
   private thermostats: Map<string, ITraneThermostat> = new Map();
-  private automations: Map<string, INexiaAutomation> = new Map();
+  private automations: Map<string, ITraneAutomation> = new Map();
   private _lastUpdate: Date | null = null;
   private isInitialized: boolean = false;
 
-  constructor(config: NexiaClientConfig) {
+  constructor(config: TraneClientConfig) {
     this.config = this.validateConfig(config);
 
     // Create HTTP client with brand-specific base URL
@@ -84,7 +84,7 @@ export class NexiaClient implements INexiaClient {
   }
 
   /**
-   * Login and authenticate with the Nexia API
+   * Login and authenticate with the Trane API
    */
   public async login(): Promise<void> {
     try {
@@ -103,8 +103,8 @@ export class NexiaClient implements INexiaClient {
         throw error;
       }
 
-      const nexiaError = ErrorHandler.handle(error);
-      throw new AuthenticationError(`Login failed: ${nexiaError.message}`);
+      const traneError = ErrorHandler.handle(error);
+      throw new AuthenticationError(`Login failed: ${traneError.message}`);
     }
   }
 
@@ -135,7 +135,7 @@ export class NexiaClient implements INexiaClient {
   /**
    * Get all automations
    */
-  public async getAutomations(): Promise<INexiaAutomation[]> {
+  public async getAutomations(): Promise<ITraneAutomation[]> {
     await this.ensureAuthenticated();
     return Array.from(this.automations.values());
   }
@@ -150,7 +150,7 @@ export class NexiaClient implements INexiaClient {
   /**
    * Get automation by ID
    */
-  public getAutomationById(id: string): INexiaAutomation | undefined {
+  public getAutomationById(id: string): ITraneAutomation | undefined {
     return this.automations.get(id);
   }
 
@@ -290,14 +290,14 @@ export class NexiaClient implements INexiaClient {
   /**
    * Validate client configuration
    */
-  private validateConfig(config: NexiaClientConfig): NexiaClientConfig {
+  private validateConfig(config: TraneClientConfig): TraneClientConfig {
     const username = GeneralValidator.validateRequiredString(config.username, 'username');
     const password = GeneralValidator.validateRequiredString(config.password, 'password');
 
     const brand = GeneralValidator.validateOptional(
       config.brand,
       (b) => GeneralValidator.validateEnum(b, BrandType, 'brand'),
-      BrandType.NEXIA
+      BrandType.TRANE
     );
 
     return {
@@ -339,15 +339,31 @@ export class NexiaClient implements INexiaClient {
 
     // Process child devices from _links
     if (result._links?.child) {
-      for (const deviceLink of result._links.child) {
+      for (const childLink of result._links.child) {
         try {
-          if (deviceLink.type === 'thermostat' || deviceLink.href.includes('xxl_thermostats')) {
-            await this.processThermostat(deviceLink);
-          } else if (deviceLink.type === 'automation' || deviceLink.href.includes('automation')) {
-            await this.processAutomation(deviceLink);
+          // Handle direct device links (legacy format)
+          if (childLink.type === 'thermostat' || childLink.href.includes('xxl_thermostats')) {
+            await this.processThermostat(childLink);
+          } else if (childLink.type === 'automation' || childLink.href.includes('automation')) {
+            await this.processAutomation(childLink);
+          }
+          // Handle collection format (current API format)
+          // Devices are embedded in data.items
+          else if (childLink.type === 'application/vnd.nexia.collection+json' && childLink.data?.items) {
+            for (const item of childLink.data.items) {
+              try {
+                // Check if item has thermostat features
+                if (this.isThermostatItem(item)) {
+                  const thermostat = new TraneThermostat(this, item);
+                  this.thermostats.set(thermostat.id, thermostat);
+                }
+              } catch (error) {
+                console.warn(`Failed to process device item ${item.id}:`, error);
+              }
+            }
           }
         } catch (error) {
-          console.warn(`Failed to process device ${deviceLink.id}:`, error);
+          console.warn(`Failed to process child link:`, error);
         }
       }
     }
@@ -356,7 +372,7 @@ export class NexiaClient implements INexiaClient {
     if (result.devices) {
       for (const device of result.devices) {
         try {
-          const thermostat = new NexiaThermostat(this, device);
+          const thermostat = new TraneThermostat(this, device);
           this.thermostats.set(thermostat.id, thermostat);
         } catch (error) {
           console.warn('Failed to create thermostat from device data:', error);
@@ -368,7 +384,7 @@ export class NexiaClient implements INexiaClient {
     if (result.automations) {
       for (const automation of result.automations) {
         try {
-          const automationObj = new NexiaAutomation(this, automation);
+          const automationObj = new TraneAutomation(this, automation);
           this.automations.set(automationObj.id, automationObj);
         } catch (error) {
           console.warn('Failed to create automation from data:', error);
@@ -378,36 +394,51 @@ export class NexiaClient implements INexiaClient {
   }
 
   /**
+   * Check if a data item represents a thermostat
+   */
+  private isThermostatItem(item: any): boolean {
+    if (!item || !item.features) {
+      return false;
+    }
+    // Check for thermostat-specific features
+    return item.features.some((f: any) =>
+      f.name === 'thermostat' ||
+      f.name === 'thermostat_mode' ||
+      f.name === 'advanced_info'
+    );
+  }
+
+  /**
    * Process individual thermostat from device link
    */
-  private async processThermostat(deviceLink: { href: string; id: string | number }): Promise<void> {
+  private async processThermostat(deviceLink: { href: string; id?: string | number }): Promise<void> {
     try {
       // Fetch full thermostat data
       const thermostatData = await this.get<ThermostatData>(deviceLink.href);
 
       // Create thermostat instance
-      const thermostat = new NexiaThermostat(this, thermostatData);
+      const thermostat = new TraneThermostat(this, thermostatData);
       this.thermostats.set(thermostat.id, thermostat);
 
     } catch (error) {
-      console.warn(`Failed to load thermostat ${deviceLink.id}:`, error);
+      console.warn(`Failed to load thermostat ${deviceLink.id || 'unknown'}:`, error);
     }
   }
 
   /**
    * Process individual automation from device link
    */
-  private async processAutomation(deviceLink: { href: string; id: string | number }): Promise<void> {
+  private async processAutomation(deviceLink: { href: string; id?: string | number }): Promise<void> {
     try {
       // Fetch full automation data
       const automationData = await this.get<AutomationData>(deviceLink.href);
 
       // Create automation instance
-      const automation = new NexiaAutomation(this, automationData);
+      const automation = new TraneAutomation(this, automationData);
       this.automations.set(automation.id, automation);
 
     } catch (error) {
-      console.warn(`Failed to load automation ${deviceLink.id}:`, error);
+      console.warn(`Failed to load automation ${deviceLink.id || 'unknown'}:`, error);
     }
   }
 

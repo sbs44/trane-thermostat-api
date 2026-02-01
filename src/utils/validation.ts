@@ -412,7 +412,7 @@ export class GeneralValidator {
 }
 
 // Combined validation utilities for common operations
-export class NexiaValidator {
+export class TraneValidator {
   /**
    * Validates complete temperature configuration
    */

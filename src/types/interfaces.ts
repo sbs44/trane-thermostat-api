@@ -1,5 +1,5 @@
 /**
- * Public interfaces for the Nexia library
+ * Public interfaces for the Trane library
  * These define the contract for external consumers
  */
 
@@ -25,7 +25,7 @@ import {
 } from './api';
 
 // Main client interface
-export interface INexiaClient {
+export interface ITraneClient {
   // Authentication
   login(): Promise<void>;
   logout(): Promise<void>;
@@ -33,9 +33,9 @@ export interface INexiaClient {
 
   // Device discovery
   getThermostats(): Promise<ITraneThermostat[]>;
-  getAutomations(): Promise<INexiaAutomation[]>;
+  getAutomations(): Promise<ITraneAutomation[]>;
   getThermostatById(id: string): ITraneThermostat | undefined;
-  getAutomationById(id: string): INexiaAutomation | undefined;
+  getAutomationById(id: string): ITraneAutomation | undefined;
 
   // Data refresh
   update(options?: UpdateOptions): Promise<void>;
@@ -118,16 +118,16 @@ export interface ITraneThermostat {
   setFollowSchedule(follow: boolean): Promise<void>;
 
   // Zone management
-  readonly zones: INexiaZone[];
+  readonly zones: ITraneZone[];
   readonly zoneIds: string[];
-  getZoneById(zoneId: string): INexiaZone | undefined;
+  getZoneById(zoneId: string): ITraneZone | undefined;
 
   // Data refresh
   refresh(): Promise<void>;
 }
 
 // Zone interface
-export interface INexiaZone {
+export interface ITraneZone {
   // Identification
   readonly id: string;
   readonly name: string;
@@ -165,10 +165,10 @@ export interface INexiaZone {
   setPreset(preset: PresetMode): Promise<void>;
 
   // RoomIQ sensors
-  readonly sensors: INexiaSensor[];
+  readonly sensors: ITraneSensor[];
   readonly activeSensorIds: Set<number>;
   readonly sensorIds: number[];
-  getSensorById(sensorId: number): INexiaSensor | undefined;
+  getSensorById(sensorId: number): ITraneSensor | undefined;
   selectActiveSensors(options: SensorSelectionOptions): Promise<void>;
 
   // Thermostat reference
@@ -180,7 +180,7 @@ export interface INexiaZone {
 }
 
 // Sensor interface
-export interface INexiaSensor {
+export interface ITraneSensor {
   // Identification
   readonly id: number;
   readonly name: string;
@@ -215,7 +215,7 @@ export interface INexiaSensor {
 }
 
 // Automation interface
-export interface INexiaAutomation {
+export interface ITraneAutomation {
   // Identification
   readonly id: string;
   readonly name: string;
@@ -230,7 +230,7 @@ export interface INexiaAutomation {
 }
 
 // Configuration interface for client creation
-export interface NexiaConfig {
+export interface TraneConfig {
   username: string;
   password: string;
   brand?: BrandType;
@@ -242,7 +242,7 @@ export interface NexiaConfig {
 }
 
 // Event interface for notifications
-export interface NexiaEvent {
+export interface TraneEvent {
   type: 'update' | 'error' | 'connected' | 'disconnected';
   timestamp: Date;
   data?: any;
@@ -250,7 +250,7 @@ export interface NexiaEvent {
 }
 
 // Event listener interface
-export interface INexiaEventListener {
+export interface ITraneEventListener {
   onUpdate?(data: any): void;
   onError?(error: Error): void;
   onConnected?(): void;
@@ -327,18 +327,18 @@ export interface IHomebridgePlatform {
 export interface IHomebridgeAccessory {
   readonly platform: IHomebridgePlatform;
   readonly accessory: any; // PlatformAccessory
-  readonly device: ITraneThermostat | INexiaZone | INexiaSensor;
+  readonly device: ITraneThermostat | ITraneZone | ITraneSensor;
 
   setupServices(): void;
   updateCharacteristics(): void;
 }
 
 // Type guards for runtime type checking
-export interface INexiaTypeGuards {
+export interface ITraneTypeGuards {
   isThermostat(device: any): device is ITraneThermostat;
-  isZone(device: any): device is INexiaZone;
-  isSensor(device: any): device is INexiaSensor;
-  isAutomation(device: any): device is INexiaAutomation;
+  isZone(device: any): device is ITraneZone;
+  isSensor(device: any): device is ITraneSensor;
+  isAutomation(device: any): device is ITraneAutomation;
   isValidTemperature(value: any, unit: TemperatureUnit): boolean;
   isValidHumidity(value: any): boolean;
   isValidFanSpeed(value: any): boolean;

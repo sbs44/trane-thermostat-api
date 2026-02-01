@@ -1,5 +1,5 @@
 /**
- * NexiaThermostat device class
+ * TraneThermostat device class
  * Represents a physical thermostat device with comprehensive feature detection and control
  */
 
@@ -12,7 +12,7 @@ import {
 } from '../types/api';
 import {
   ITraneThermostat,
-  INexiaZone
+  ITraneZone
 } from '../types/interfaces';
 import {
   SystemStatus,
@@ -22,29 +22,96 @@ import {
   API_ENDPOINTS,
   API_CONSTANTS
 } from '../types/constants';
-import { NexiaClient } from '../client/nexia-client';
-import { NexiaZone } from './nexia-zone';
+import { TraneClient } from '../client/trane-client';
+import { TraneZone } from './trane-zone';
 import {
   TemperatureValidator,
   HumidityValidator,
   FanSpeedValidator,
   GeneralValidator,
-  NexiaValidator
+  TraneValidator
 } from '../utils/validation';
 import {
   FeatureNotSupportedError,
   ValidationError
 } from '../utils/errors';
 
-export class NexiaThermostat implements ITraneThermostat {
-  private readonly client: NexiaClient;
+export class TraneThermostat implements ITraneThermostat {
+  private readonly client: TraneClient;
   private readonly data: ThermostatData;
-  private readonly zonesMap: Map<string, INexiaZone> = new Map();
+  private readonly zonesMap: Map<string, ITraneZone> = new Map();
 
-  constructor(client: NexiaClient, data: ThermostatData) {
+  constructor(client: TraneClient, rawData: any) {
     this.client = client;
-    this.data = data;
+    this.data = this.transformApiData(rawData);
     this.initializeZones();
+  }
+
+  /**
+   * Transform API response data to internal format
+   * Handles both legacy format and current array-based features format
+   */
+  private transformApiData(rawData: any): ThermostatData {
+    // Check if already in expected format (has settings as an object, not an array)
+    const hasSettingsObject = rawData.settings && typeof rawData.settings === 'object' && !Array.isArray(rawData.settings);
+    const hasFeaturesObject = rawData.features && typeof rawData.features === 'object' && !Array.isArray(rawData.features);
+
+    if (hasSettingsObject || hasFeaturesObject) {
+      return rawData as ThermostatData;
+    }
+
+    // Transform array-based features format
+    const features = Array.isArray(rawData.features) ? rawData.features : [];
+
+    // Find specific feature objects
+    const advancedInfo = features.find((f: any) => f.name === 'advanced_info');
+    const thermostatFeature = features.find((f: any) => f.name === 'thermostat');
+    const connectionFeature = features.find((f: any) => f.name === 'connection');
+
+    // Extract model and firmware from advanced_info
+    let model = 'Unknown';
+    let firmware = 'Unknown';
+    if (advancedInfo?.items) {
+      for (const item of advancedInfo.items) {
+        if (item.label === 'Model') model = item.value;
+        if (item.label === 'Firmware Version') firmware = item.value;
+      }
+    }
+
+    // Build transformed data
+    const transformed: ThermostatData = {
+      id: rawData.id,
+      name: rawData.name,
+      model,
+      firmware,
+      is_online: connectionFeature?.is_connected ?? true,
+      features: {
+        has_zones: false,
+        has_outdoor_temperature: false,
+        has_relative_humidity: false,
+        has_variable_speed_compressor: false,
+        has_emergency_heat: false,
+        has_variable_fan_speed: false,
+        has_dehumidify_support: false,
+        has_humidify_support: false,
+        has_air_cleaner: false
+      },
+      settings: {},
+      zones: [],
+      // Preserve raw features for zone extraction
+      _rawFeatures: features
+    };
+
+    // Extract settings from thermostat feature
+    if (thermostatFeature) {
+      transformed.settings = {
+        temperature_unit: thermostatFeature.scale === 'c' ? TemperatureUnit.CELSIUS : TemperatureUnit.FAHRENHEIT,
+        deadband: thermostatFeature.setpoint_delta || 3,
+        system_status: thermostatFeature.system_status || thermostatFeature.status
+      };
+    }
+
+    return transformed;
   }
 
   // Identification
@@ -301,7 +368,7 @@ export class NexiaThermostat implements ITraneThermostat {
   }
 
   public async setHumiditySetpoints(options: HumidityOptions): Promise<void> {
-    NexiaValidator.validateHumidityConfig(options);
+    TraneValidator.validateHumidityConfig(options);
 
     if (options.humidify !== undefined) {
       if (!this.hasHumidifySupport) {
@@ -393,7 +460,7 @@ export class NexiaThermostat implements ITraneThermostat {
   }
 
   // Zone management
-  public get zones(): INexiaZone[] {
+  public get zones(): ITraneZone[] {
     return Array.from(this.zonesMap.values());
   }
 
@@ -401,7 +468,7 @@ export class NexiaThermostat implements ITraneThermostat {
     return Array.from(this.zonesMap.keys());
   }
 
-  public getZoneById(zoneId: string): INexiaZone | undefined {
+  public getZoneById(zoneId: string): ITraneZone | undefined {
     return this.zonesMap.get(zoneId);
   }
 
@@ -418,16 +485,73 @@ export class NexiaThermostat implements ITraneThermostat {
   private initializeZones(): void {
     this.zonesMap.clear();
 
-    if (!this.data.zones) {
+    // First try explicit zones array
+    if (this.data.zones && this.data.zones.length > 0) {
+      for (const zoneData of this.data.zones) {
+        try {
+          const zone = new TraneZone(this.client, this, zoneData);
+          this.zonesMap.set(zone.id, zone);
+        } catch (error) {
+          console.warn(`Failed to create zone ${zoneData.id}:`, error);
+        }
+      }
       return;
     }
 
-    for (const zoneData of this.data.zones) {
-      try {
-        const zone = new NexiaZone(this.client, this, zoneData);
-        this.zonesMap.set(zone.id, zone);
-      } catch (error) {
-        console.warn(`Failed to create zone ${zoneData.id}:`, error);
+    // Extract zone from raw features (current API format)
+    const rawFeatures = (this.data as any)._rawFeatures;
+    if (rawFeatures && Array.isArray(rawFeatures)) {
+      const thermostatFeature = rawFeatures.find((f: any) => f.name === 'thermostat');
+      const modeFeature = rawFeatures.find((f: any) => f.name === 'thermostat_mode');
+      const runModeFeature = rawFeatures.find((f: any) => f.name === 'thermostat_run_mode');
+      const sensorFeature = rawFeatures.find((f: any) => f.name === 'room_iq_sensors');
+
+      if (thermostatFeature) {
+        // Extract zone ID from device_identifier (e.g., "XxlZone-85588519" -> 85588519)
+        let zoneId = String(this.data.id);
+        if (thermostatFeature.device_identifier) {
+          const match = thermostatFeature.device_identifier.match(/XxlZone-(\d+)/);
+          if (match) {
+            zoneId = match[1];
+          }
+        }
+
+        // Get temperature from sensor if available (more accurate)
+        let currentTemp = thermostatFeature.temperature;
+        if (sensorFeature?.sensors?.length > 0) {
+          const primarySensor = sensorFeature.sensors[0];
+          if (primarySensor.temperature_valid) {
+            currentTemp = primarySensor.temperature;
+          }
+        }
+
+        const zoneData = {
+          id: zoneId,
+          name: this.data.name || 'Zone 1',
+          features: {
+            heating_setpoint: thermostatFeature.setpoint_heat,
+            cooling_setpoint: thermostatFeature.setpoint_cool,
+            current_mode: modeFeature?.value,
+            setpoint_status: runModeFeature?.value,
+            is_calling: thermostatFeature.operating_state !== 'idle'
+          },
+          settings: {
+            temperature: currentTemp,
+            status: thermostatFeature.operating_state || thermostatFeature.status
+          },
+          _rawActions: {
+            setpoints: thermostatFeature.actions?.set_heat_setpoint?.href,
+            zone_mode: modeFeature?.actions?.update_thermostat_mode?.href,
+            run_mode: runModeFeature?.actions?.update_thermostat_run_mode?.href
+          }
+        };
+
+        try {
+          const zone = new TraneZone(this.client, this, zoneData);
+          this.zonesMap.set(zone.id, zone);
+        } catch (error) {
+          console.warn(`Failed to create zone from thermostat feature:`, error);
+        }
       }
     }
   }

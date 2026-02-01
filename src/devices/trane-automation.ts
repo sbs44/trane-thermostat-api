@@ -1,19 +1,19 @@
 /**
- * NexiaAutomation device class
- * Represents automation rules configured in Nexia
+ * TraneAutomation device class
+ * Represents automation rules configured in Trane
  */
 
 import { AutomationData } from '../types/api';
-import { INexiaAutomation } from '../types/interfaces';
-import { NexiaClient } from '../client/nexia-client';
+import { ITraneAutomation } from '../types/interfaces';
+import { TraneClient } from '../client/trane-client';
 import { GeneralValidator } from '../utils/validation';
 import { DeviceNotFoundError } from '../utils/errors';
 
-export class NexiaAutomation implements INexiaAutomation {
-  private readonly client: NexiaClient;
+export class TraneAutomation implements ITraneAutomation {
+  private readonly client: TraneClient;
   private readonly data: AutomationData;
 
-  constructor(client: NexiaClient, data: AutomationData) {
+  constructor(client: TraneClient, data: AutomationData) {
     this.client = client;
     this.data = data;
   }

@@ -1,28 +1,28 @@
 /**
- * Custom error classes for the Nexia library
+ * Custom error classes for the Trane library
  * Provides structured error handling with specific error types
  */
 
-// Base error class for all Nexia-related errors
-export class NexiaError extends Error {
+// Base error class for all Trane-related errors
+export class TraneError extends Error {
   public code: string;
   public readonly timestamp: Date;
 
   constructor(message: string, code: string = 'UNKNOWN_ERROR') {
     super(message);
-    this.name = 'NexiaError';
+    this.name = 'TraneError';
     this.code = code;
     this.timestamp = new Date();
 
     // Maintain proper stack trace for V8 engines
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, NexiaError);
+      Error.captureStackTrace(this, TraneError);
     }
   }
 }
 
 // Authentication and authorization errors
-export class AuthenticationError extends NexiaError {
+export class AuthenticationError extends TraneError {
   constructor(message: string = 'Authentication failed') {
     super(message, 'AUTH_ERROR');
     this.name = 'AuthenticationError';
@@ -51,7 +51,7 @@ export class SessionExpiredError extends AuthenticationError {
 }
 
 // Parameter validation errors
-export class ValidationError extends NexiaError {
+export class ValidationError extends TraneError {
   public readonly field?: string;
   public readonly value?: unknown;
 
@@ -105,7 +105,7 @@ export class DeadbandValidationError extends ValidationError {
 }
 
 // API communication errors
-export class ApiError extends NexiaError {
+export class ApiError extends TraneError {
   public readonly statusCode?: number;
   public readonly response?: unknown;
 
@@ -127,7 +127,7 @@ export class HttpError extends ApiError {
 }
 
 // Network connectivity errors
-export class NetworkError extends NexiaError {
+export class NetworkError extends TraneError {
   public readonly originalError?: Error;
 
   constructor(message: string, originalError?: Error) {
@@ -150,7 +150,7 @@ export class TimeoutError extends NetworkError {
 }
 
 // Device not found errors
-export class DeviceNotFoundError extends NexiaError {
+export class DeviceNotFoundError extends TraneError {
   public readonly deviceId: string;
   public readonly deviceType: string;
 
@@ -163,7 +163,7 @@ export class DeviceNotFoundError extends NexiaError {
 }
 
 // Feature not supported errors
-export class FeatureNotSupportedError extends NexiaError {
+export class FeatureNotSupportedError extends TraneError {
   public readonly feature: string;
   public readonly deviceModel?: string;
 
@@ -179,7 +179,7 @@ export class FeatureNotSupportedError extends NexiaError {
 }
 
 // Operation not allowed errors
-export class OperationNotAllowedError extends NexiaError {
+export class OperationNotAllowedError extends TraneError {
   public readonly operation: string;
   public readonly reason?: string;
 
@@ -195,7 +195,7 @@ export class OperationNotAllowedError extends NexiaError {
 }
 
 // Configuration errors
-export class ConfigurationError extends NexiaError {
+export class ConfigurationError extends TraneError {
   public readonly configField?: string;
 
   constructor(message: string, configField?: string) {
@@ -206,7 +206,7 @@ export class ConfigurationError extends NexiaError {
 }
 
 // Parsing errors for API responses
-export class ParseError extends NexiaError {
+export class ParseError extends TraneError {
   public readonly data?: unknown;
 
   constructor(message: string, data?: unknown) {
@@ -273,8 +273,8 @@ export class ErrorFactory {
 }
 
 // Type guard functions
-export function isNexiaError(error: unknown): error is NexiaError {
-  return error instanceof NexiaError;
+export function isTraneError(error: unknown): error is TraneError {
+  return error instanceof TraneError;
 }
 
 export function isAuthenticationError(error: unknown): error is AuthenticationError {
@@ -295,26 +295,26 @@ export function isNetworkError(error: unknown): error is NetworkError {
 
 // Error handler utility
 export class ErrorHandler {
-  static handle(error: unknown): NexiaError {
-    if (isNexiaError(error)) {
+  static handle(error: unknown): TraneError {
+    if (isTraneError(error)) {
       return error;
     }
 
     if (error instanceof Error) {
-      // Convert generic errors to NexiaError
-      return new NexiaError(error.message, 'UNKNOWN_ERROR');
+      // Convert generic errors to TraneError
+      return new TraneError(error.message, 'UNKNOWN_ERROR');
     }
 
     // Handle string errors
     if (typeof error === 'string') {
-      return new NexiaError(error, 'UNKNOWN_ERROR');
+      return new TraneError(error, 'UNKNOWN_ERROR');
     }
 
     // Handle unknown error types
-    return new NexiaError('An unknown error occurred', 'UNKNOWN_ERROR');
+    return new TraneError('An unknown error occurred', 'UNKNOWN_ERROR');
   }
 
-  static isRetryable(error: NexiaError): boolean {
+  static isRetryable(error: TraneError): boolean {
     // Network errors and specific HTTP errors are generally retryable
     return (
       isNetworkError(error) ||

@@ -1,5 +1,5 @@
 /**
- * NexiaZone device class
+ * TraneZone device class
  * Represents a zone/room within a thermostat with independent temperature control
  */
 
@@ -10,7 +10,7 @@ import {
   HoldOptions,
   SensorSelectionOptions
 } from '../types/api';
-import { INexiaZone, ITraneThermostat, INexiaSensor } from '../types/interfaces';
+import { ITraneZone, ITraneThermostat, ITraneSensor } from '../types/interfaces';
 import {
   OperationMode,
   PresetMode,
@@ -18,24 +18,24 @@ import {
   API_ENDPOINTS,
   API_CONSTANTS
 } from '../types/constants';
-import { NexiaClient } from '../client/nexia-client';
-import { NexiaSensor } from './nexia-sensor';
+import { TraneClient } from '../client/trane-client';
+import { TraneSensor } from './trane-sensor';
 import {
   TemperatureValidator,
   GeneralValidator,
-  NexiaValidator
+  TraneValidator
 } from '../utils/validation';
 import {
   ValidationError
 } from '../utils/errors';
 
-export class NexiaZone implements INexiaZone {
-  private readonly client: NexiaClient;
+export class TraneZone implements ITraneZone {
+  private readonly client: TraneClient;
   private readonly thermostatRef: ITraneThermostat;
   private readonly data: ZoneData;
-  private readonly sensorsMap: Map<number, INexiaSensor> = new Map();
+  private readonly sensorsMap: Map<number, ITraneSensor> = new Map();
 
-  constructor(client: NexiaClient, thermostat: ITraneThermostat, data: ZoneData) {
+  constructor(client: TraneClient, thermostat: ITraneThermostat, data: ZoneData) {
     this.client = client;
     this.thermostatRef = thermostat;
     this.data = data;
@@ -58,20 +58,24 @@ export class NexiaZone implements INexiaZone {
 
   // Temperature
   public get currentTemperature(): number {
-    return this.data.settings?.temperature || 0;
+    // Handle both API formats: direct property or nested in settings
+    return (this.data as any).temperature ?? this.data.settings?.temperature ?? 0;
   }
 
   public get heatingSetpoint(): number {
-    return this.data.features?.heating_setpoint || 70;
+    // Handle both API formats: direct property or nested in features
+    return (this.data as any).heating_setpoint ?? (this.data as any).setpoints?.heat ?? this.data.features?.heating_setpoint ?? 70;
   }
 
   public get coolingSetpoint(): number {
-    return this.data.features?.cooling_setpoint || 75;
+    // Handle both API formats: direct property or nested in features
+    return (this.data as any).cooling_setpoint ?? (this.data as any).setpoints?.cool ?? this.data.features?.cooling_setpoint ?? 75;
   }
 
   // Mode control
   public get currentMode(): OperationMode {
-    const mode = this.data.features?.current_mode;
+    // Handle both API formats
+    const mode = (this.data as any).current_zone_mode ?? this.data.features?.current_mode;
     return this.parseOperationMode(mode);
   }
 
@@ -104,7 +108,7 @@ export class NexiaZone implements INexiaZone {
 
   // Setpoint control
   public async setTemperatures(options: TemperatureOptions): Promise<void> {
-    NexiaValidator.validateTemperatureConfig({
+    TraneValidator.validateTemperatureConfig({
       heatTemp: options.heatingSetpoint,
       coolTemp: options.coolingSetpoint,
       setTemp: options.setTemp,
@@ -180,7 +184,7 @@ export class NexiaZone implements INexiaZone {
 
     // Include temperature setpoints if provided
     if (options?.temperatures) {
-      NexiaValidator.validateTemperatureConfig({
+      TraneValidator.validateTemperatureConfig({
         heatTemp: options.temperatures.heatingSetpoint,
         coolTemp: options.temperatures.coolingSetpoint,
         setTemp: options.temperatures.setTemp,
@@ -248,7 +252,7 @@ export class NexiaZone implements INexiaZone {
   }
 
   // RoomIQ sensors
-  public get sensors(): INexiaSensor[] {
+  public get sensors(): ITraneSensor[] {
     return Array.from(this.sensorsMap.values());
   }
 
@@ -261,12 +265,12 @@ export class NexiaZone implements INexiaZone {
     return Array.from(this.sensorsMap.keys());
   }
 
-  public getSensorById(sensorId: number): INexiaSensor | undefined {
+  public getSensorById(sensorId: number): ITraneSensor | undefined {
     return this.sensorsMap.get(sensorId);
   }
 
   public async selectActiveSensors(options: SensorSelectionOptions): Promise<void> {
-    NexiaValidator.validateSensorSelection({
+    TraneValidator.validateSensorSelection({
       activeSensorIds: options.activeSensorIds,
       availableSensorIds: this.sensorIds
     });
@@ -366,7 +370,7 @@ export class NexiaZone implements INexiaZone {
 
     for (const sensorData of this.data.sensors) {
       try {
-        const sensor = new NexiaSensor(sensorData);
+        const sensor = new TraneSensor(sensorData);
         this.sensorsMap.set(sensor.id, sensor);
       } catch (error) {
         console.warn(`Failed to create sensor ${sensorData.id}:`, error);

@@ -1,13 +1,13 @@
 /**
- * NexiaSensor device class
+ * TraneSensor device class
  * Represents RoomIQ temperature/humidity sensors with battery monitoring
  */
 
 import { SensorData } from '../types/api';
-import { INexiaSensor } from '../types/interfaces';
+import { ITraneSensor } from '../types/interfaces';
 import { SensorType, BATTERY_THRESHOLDS } from '../types/constants';
 
-export class NexiaSensor implements INexiaSensor {
+export class TraneSensor implements ITraneSensor {
   private readonly data: SensorData;
 
   constructor(data: SensorData) {
@@ -178,7 +178,7 @@ export class NexiaSensor implements INexiaSensor {
   /**
    * Compare sensors for sorting (active sensors first, then by name)
    */
-  public static compare(a: INexiaSensor, b: INexiaSensor): number {
+  public static compare(a: ITraneSensor, b: ITraneSensor): number {
     // Active sensors first
     if (a.isActive && !b.isActive) return -1;
     if (!a.isActive && b.isActive) return 1;
@@ -190,26 +190,26 @@ export class NexiaSensor implements INexiaSensor {
   /**
    * Filter sensors by various criteria
    */
-  public static filterActive(sensors: INexiaSensor[]): INexiaSensor[] {
+  public static filterActive(sensors: ITraneSensor[]): ITraneSensor[] {
     return sensors.filter(sensor => sensor.isActive);
   }
 
-  public static filterConnected(sensors: INexiaSensor[]): INexiaSensor[] {
+  public static filterConnected(sensors: ITraneSensor[]): ITraneSensor[] {
     return sensors.filter(sensor => sensor.isConnected !== false);
   }
 
-  public static filterValidData(sensors: INexiaSensor[]): INexiaSensor[] {
+  public static filterValidData(sensors: ITraneSensor[]): ITraneSensor[] {
     return sensors.filter(sensor => sensor.isDataValid());
   }
 
-  public static filterBatteryPowered(sensors: INexiaSensor[]): INexiaSensor[] {
+  public static filterBatteryPowered(sensors: ITraneSensor[]): ITraneSensor[] {
     return sensors.filter(sensor => sensor.hasBattery);
   }
 
   /**
    * Get sensors with low battery
    */
-  public static getLowBatterySensors(sensors: INexiaSensor[]): INexiaSensor[] {
+  public static getLowBatterySensors(sensors: ITraneSensor[]): ITraneSensor[] {
     return sensors.filter(sensor =>
       sensor.hasBattery &&
       (sensor.batteryStatus === 'low' || sensor.batteryStatus === 'critical')

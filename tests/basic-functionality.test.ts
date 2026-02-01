@@ -1,26 +1,24 @@
 /**
- * Basic functionality tests for the Nexia library
+ * Basic functionality tests for the Trane library
  * Tests core classes and basic operations
  */
 
 import {
-  NexiaClient,
+  TraneClient,
   BrandType,
   OperationMode,
   SystemStatus,
   PresetMode,
   TemperatureUnit,
-  NexiaSensor
+  TraneSensor
 } from '../src/index';
 
 import { testUtils } from './setup';
 
-describe('Nexia Library Basic Functionality', () => {
+describe('Trane Library Basic Functionality', () => {
   describe('Constants and Enums', () => {
     test('BrandType enum should have correct values', () => {
-      expect(BrandType.NEXIA).toBe('nexia');
       expect(BrandType.TRANE).toBe('trane');
-      expect(BrandType.ASAIR).toBe('asair');
     });
 
     test('OperationMode enum should have correct values', () => {
@@ -45,17 +43,17 @@ describe('Nexia Library Basic Functionality', () => {
     });
   });
 
-  describe('NexiaClient Configuration', () => {
+  describe('TraneClient Configuration', () => {
     test('should validate required configuration', () => {
       expect(() => {
-        new NexiaClient({
+        new TraneClient({
           username: '',
           password: 'password'
         });
       }).toThrow();
 
       expect(() => {
-        new NexiaClient({
+        new TraneClient({
           username: 'user@example.com',
           password: ''
         });
@@ -64,28 +62,28 @@ describe('Nexia Library Basic Functionality', () => {
 
     test('should accept valid configuration', () => {
       expect(() => {
-        new NexiaClient({
+        new TraneClient({
           username: 'user@example.com',
           password: 'password',
-          brand: BrandType.NEXIA
+          brand: BrandType.TRANE
         });
       }).not.toThrow();
     });
 
     test('should use default brand when not specified', () => {
-      const client = new NexiaClient({
+      const client = new TraneClient({
         username: 'user@example.com',
         password: 'password'
       });
 
-      expect(client.brand).toBe(BrandType.NEXIA);
+      expect(client.brand).toBe(BrandType.TRANE);
     });
   });
 
-  describe('NexiaSensor', () => {
+  describe('TraneSensor', () => {
     test('should create sensor with basic data', () => {
       const sensorData = testUtils.createMockSensorData();
-      const sensor = new NexiaSensor(sensorData as any);
+      const sensor = new TraneSensor(sensorData as any);
 
       expect(sensor.id).toBe(sensorData['id']);
       expect(sensor.name).toBe(sensorData['name']);
@@ -98,7 +96,7 @@ describe('Nexia Library Basic Functionality', () => {
       sensorData.has_battery = true;
       sensorData.battery = { level: 85, low: false, valid: true };
 
-      const sensor = new NexiaSensor(sensorData);
+      const sensor = new TraneSensor(sensorData);
 
       expect(sensor.hasBattery).toBe(true);
       expect(sensor.batteryLevel).toBe(85);
@@ -110,7 +108,7 @@ describe('Nexia Library Basic Functionality', () => {
       sensorData.has_battery = true;
       sensorData.battery = { level: 15, low: true, valid: true };
 
-      const sensor = new NexiaSensor(sensorData);
+      const sensor = new TraneSensor(sensorData);
 
       expect(sensor.batteryStatus).toBe('low');
     });
@@ -120,7 +118,7 @@ describe('Nexia Library Basic Functionality', () => {
       sensorData.has_battery = true;
       sensorData.battery = { level: 5, low: true, valid: true };
 
-      const sensor = new NexiaSensor(sensorData);
+      const sensor = new TraneSensor(sensorData);
 
       expect(sensor.batteryStatus).toBe('critical');
     });
@@ -254,18 +252,18 @@ describe('Nexia Library Basic Functionality', () => {
 });
 
 describe('Integration Tests (Mock)', () => {
-  let mockClient: NexiaClient;
+  let mockClient: TraneClient;
 
   beforeEach(() => {
-    mockClient = new NexiaClient({
+    mockClient = new TraneClient({
       username: 'test@example.com',
       password: 'password',
-      brand: BrandType.NEXIA
+      brand: BrandType.TRANE
     });
   });
 
   test('should initialize client without errors', () => {
-    expect(mockClient.brand).toBe(BrandType.NEXIA);
+    expect(mockClient.brand).toBe(BrandType.TRANE);
     expect(mockClient.username).toBe('test@example.com');
   });
 

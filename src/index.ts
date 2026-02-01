@@ -1,17 +1,17 @@
 /**
- * Nexia Homebridge Library
- * Main exports for the TypeScript Nexia library
+ * Trane Homebridge Library
+ * Main exports for the TypeScript Trane library
  */
 
 // Core client
-export { NexiaClient } from './client/nexia-client';
+export { TraneClient } from './client/trane-client';
 export { AuthManager } from './client/auth';
 
 // Device classes
-export { NexiaThermostat } from './devices/nexia-thermostat';
-export { NexiaZone } from './devices/nexia-zone';
-export { NexiaSensor } from './devices/nexia-sensor';
-export { NexiaAutomation } from './devices/nexia-automation';
+export { TraneThermostat } from './devices/trane-thermostat';
+export { TraneZone } from './devices/trane-zone';
+export { TraneSensor } from './devices/trane-sensor';
+export { TraneAutomation } from './devices/trane-automation';
 
 // Types and interfaces
 export * from './types/constants';
@@ -25,7 +25,7 @@ export { HttpClient, createHttpClient } from './utils/http-utils';
 export { JsonUtils } from './utils/json-utils';
 
 // Homebridge integration (to be implemented)
-// export { NexiaHomebridgePlatform } from './homebridge/platform';
+// export { TraneHomebridgePlatform } from './homebridge/platform';
 // export { ThermostatAccessory } from './homebridge/accessories/thermostat-accessory';
 // export { ZoneAccessory } from './homebridge/accessories/zone-accessory';
 // export { SensorAccessory } from './homebridge/accessories/sensor-accessory';

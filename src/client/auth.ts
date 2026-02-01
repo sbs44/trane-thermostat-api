@@ -1,5 +1,5 @@
 /**
- * Authentication manager for Nexia API
+ * Authentication manager for Trane API
  * Handles login, session management, device UUID persistence, and rate limiting
  */
 
@@ -66,7 +66,7 @@ export class AuthManager {
   }
 
   /**
-   * Authenticate with the Nexia API
+   * Authenticate with the Trane API
    */
   public async authenticate(): Promise<AuthTokens> {
     // Check rate limiting
@@ -75,23 +75,23 @@ export class AuthManager {
     try {
       const response = await this.performLogin();
 
-      if (response.success && response.api_key && response.mobile_id) {
+      if (response.success && response.result?.api_key && response.result?.mobile_id) {
         // Update auth state on successful login
-        this.authState.apiKey = response.api_key;
-        this.authState.mobileId = response.mobile_id;
+        this.authState.apiKey = response.result.api_key;
+        this.authState.mobileId = String(response.result.mobile_id);
         this.authState.loginAttempts = 0;
         this.authState.lastLoginAttempt = Date.now();
         this.authState.sessionExpiry = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
 
         // Update HTTP client headers
-        this.httpClient.setAuthHeaders(response.api_key, response.mobile_id, this.config.brand);
+        this.httpClient.setAuthHeaders(response.result.api_key, String(response.result.mobile_id), this.config.brand);
 
         // Save state
         await this.saveState();
 
         return {
-          apiKey: response.api_key,
-          mobileId: response.mobile_id,
+          apiKey: response.result.api_key,
+          mobileId: String(response.result.mobile_id),
           success: true
         };
       } else {
@@ -105,8 +105,8 @@ export class AuthManager {
         throw error;
       }
 
-      const nexiaError = ErrorHandler.handle(error);
-      throw new AuthenticationError(`Login failed: ${nexiaError.message}`);
+      const traneError = ErrorHandler.handle(error);
+      throw new AuthenticationError(`Login failed: ${traneError.message}`);
     }
   }
 
@@ -202,8 +202,29 @@ export class AuthManager {
     try {
       const response = await this.httpClient.post<SessionResponse>(API_ENDPOINTS.SESSION, {});
 
-      if (response.data.success && response.data.result?.homes) {
-        const homes = response.data.result.homes;
+      if (response.data.success && response.data.result) {
+        const result = response.data.result;
+
+        // Parse homes from the _links.child array (current API format)
+        // Each child with type "application/vnd.nexia.location+json" is a home
+        // Note: The API uses "nexia" in content types regardless of brand
+        const homes: Array<{ house_id: number; name: string }> = [];
+
+        if (result._links?.child) {
+          for (const child of result._links.child) {
+            if (child.type === 'application/vnd.nexia.location+json' && child.data?.id) {
+              homes.push({
+                house_id: child.data.id,
+                name: child.data.name || 'Home'
+              });
+            }
+          }
+        }
+
+        // Fall back to legacy format if available
+        if (homes.length === 0 && result.homes) {
+          homes.push(...result.homes);
+        }
 
         if (homes.length === 0) {
           throw new AuthenticationError('No homes found in account');
@@ -232,8 +253,8 @@ export class AuthManager {
         throw error;
       }
 
-      const nexiaError = ErrorHandler.handle(error);
-      throw new AuthenticationError(`Session discovery failed: ${nexiaError.message}`);
+      const traneError = ErrorHandler.handle(error);
+      throw new AuthenticationError(`Session discovery failed: ${traneError.message}`);
     }
   }
 
@@ -269,7 +290,7 @@ export class AuthManager {
 
     // Default to user's home directory or current working directory
     const homeDir = process.env['HOME'] || process.env['USERPROFILE'] || process.cwd();
-    return join(homeDir, '.nexia', 'auth-state.json');
+    return join(homeDir, '.trane', 'auth-state.json');
   }
 
   /**

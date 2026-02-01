@@ -1,21 +1,20 @@
 /**
- * Constants and enums for the Nexia thermostat library
+ * Constants and enums for the Trane thermostat library
  * Converted from Python version with TypeScript typing
  */
 
-// Brand types supported by the API
+// Brand type - Trane only
 export enum BrandType {
-  NEXIA = 'nexia',
-  TRANE = 'trane',
-  ASAIR = 'asair'
+  TRANE = 'trane'
 }
 
-// Base URLs for each brand
+// Base URL for Trane API
 export const BRAND_URLS = {
-  [BrandType.NEXIA]: 'https://www.mynexia.com',
-  [BrandType.TRANE]: 'https://www.tranehome.com',
-  [BrandType.ASAIR]: 'https://asairhome.com'
+  [BrandType.TRANE]: 'https://www.tranehome.com'
 } as const;
+
+// API base URL (single brand)
+export const API_BASE_URL = 'https://www.tranehome.com';
 
 // Operation modes for thermostats and zones
 export enum OperationMode {

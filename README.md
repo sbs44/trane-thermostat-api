@@ -1,10 +1,10 @@
-# Nexia Homebridge Library
+# Trane Thermostat API
 
-A TypeScript/Node.js library for controlling Nexia/Trane/American Standard thermostats, specifically designed for Homebridge integration.
+A TypeScript/Node.js library for controlling Trane thermostats via the Trane Home API.
 
 ## Overview
 
-This library provides a complete rewrite of the Python Nexia library in TypeScript, offering:
+This library provides:
 
 - **Full TypeScript support** with comprehensive type definitions
 - **Homebridge-optimized** architecture for seamless HomeKit integration
@@ -15,9 +15,7 @@ This library provides a complete rewrite of the Python Nexia library in TypeScri
 
 ## Supported Devices
 
-- **Nexia Thermostats**: XL950, XL1050, XL824, UX360
-- **Trane Thermostats**: Compatible with Nexia API
-- **American Standard**: Compatible with Nexia API
+- **Trane Thermostats**: XL850, XL950, XL1050, XL824, and other Trane Home compatible models
 
 ## Features
 
@@ -45,7 +43,6 @@ This library provides a complete rewrite of the Python Nexia library in TypeScri
 - ETag-based caching for efficient API usage
 - Automatic session management and re-authentication
 - Rate-limited login attempts to prevent account lockout
-- Brand-specific URL handling (Nexia, Trane, American Standard)
 - Comprehensive device capability detection
 
 ## Installation
@@ -57,12 +54,11 @@ npm install trane-thermostat-api
 ## Quick Start
 
 ```typescript
-import { NexiaClient, BrandType } from 'trane-thermostat-api';
+import { TraneClient } from 'trane-thermostat-api';
 
-const client = new NexiaClient({
+const client = new TraneClient({
   username: 'your-email@example.com',
-  password: 'your-password',
-  brand: BrandType.NEXIA
+  password: 'your-password'
 });
 
 // Authenticate and discover devices
@@ -85,16 +81,16 @@ await zone.setTemperatures({
 
 ### Core Classes
 
-#### NexiaClient
+#### TraneClient
 Main HTTP client for API communication and device discovery.
 
-#### NexiaThermostat
+#### TraneThermostat
 Represents a physical thermostat with full feature detection and control.
 
-#### NexiaZone
+#### TraneZone
 Represents a zone/room within a thermostat with independent temperature control.
 
-#### NexiaSensor
+#### TraneSensor
 RoomIQ temperature and humidity sensor with battery monitoring.
 
 ## Homebridge Integration
@@ -127,7 +123,6 @@ The test suite includes:
 - Mock HTTP responses for API testing
 - Validation logic testing
 - Error handling scenarios
-- Integration tests with real API endpoints
 
 ```bash
 npm run test:coverage
@@ -144,7 +139,3 @@ npm run test:coverage
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Acknowledgments
-
-Based on the original Python Nexia library architecture, rewritten for modern TypeScript/Node.js environments with Homebridge-specific optimizations.

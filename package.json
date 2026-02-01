@@ -1,7 +1,7 @@
 {
   "name": "trane-thermostat-api",
-  "version": "1.0.1",
-  "description": "Node.js TypeScript library for controlling Trane/Nexia/American Standard thermostats",
+  "version": "1.0.2",
+  "description": "Node.js TypeScript library for controlling Trane thermostats",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -16,10 +16,7 @@
   },
   "keywords": [
     "trane",
-    "nexia",
-    "american-standard",
     "thermostat",
-    "typescript",
     "hvac"
   ],
   "author": "sbs44",

@@ -1,5 +1,5 @@
 /**
- * API response type definitions for Nexia thermostat API
+ * API response type definitions for Trane thermostat API
  * Based on analysis of Python library's JSON response handling
  */
 
@@ -23,15 +23,43 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   success: boolean;
-  api_key?: string;
-  mobile_id?: string;
-  error?: string;
+  error?: string | null;
+  result?: {
+    api_key: string;
+    mobile_id: number;
+    setup_step?: string;
+    locale?: string;
+  };
 }
 
 export interface SessionResponse {
   success: boolean;
+  error?: string | null;
   result?: {
-    homes: HomeInfo[];
+    can_control_automations?: boolean;
+    can_manage_locks?: boolean;
+    can_view_videos?: boolean;
+    can_receive_notifications?: boolean;
+    _links?: {
+      self?: LinkInfo;
+      child?: SessionChildLink[];
+      parent?: LinkInfo;
+      stream?: LinkInfo;
+    };
+    // Legacy format support
+    homes?: HomeInfo[];
+  };
+}
+
+export interface SessionChildLink {
+  href: string;
+  type: string;
+  data?: {
+    id: number;
+    name: string;
+    postal_code?: string;
+    items?: any[];
+    _links?: any;
   };
 }
 
@@ -53,8 +81,12 @@ export interface LinkInfo {
 export interface DeviceLink {
   href: string;
   type: string;
-  id: string | number;
+  id?: string | number;
   name?: string;
+  data?: {
+    items?: any[];
+    [key: string]: any;
+  };
 }
 
 // Main house data response
@@ -263,7 +295,7 @@ export interface ETagResponse<T> {
 }
 
 // Configuration for API client
-export interface NexiaClientConfig {
+export interface TraneClientConfig {
   username: string;
   password: string;
   brand?: BrandType;
