@@ -10,7 +10,7 @@ import {
   HoldOptions,
   SensorSelectionOptions
 } from '../types/api';
-import { INexiaZone, INexiaThermostat, INexiaSensor } from '../types/interfaces';
+import { INexiaZone, ITraneThermostat, INexiaSensor } from '../types/interfaces';
 import {
   OperationMode,
   PresetMode,
@@ -31,11 +31,11 @@ import {
 
 export class NexiaZone implements INexiaZone {
   private readonly client: NexiaClient;
-  private readonly thermostatRef: INexiaThermostat;
+  private readonly thermostatRef: ITraneThermostat;
   private readonly data: ZoneData;
   private readonly sensorsMap: Map<number, INexiaSensor> = new Map();
 
-  constructor(client: NexiaClient, thermostat: INexiaThermostat, data: ZoneData) {
+  constructor(client: NexiaClient, thermostat: ITraneThermostat, data: ZoneData) {
     this.client = client;
     this.thermostatRef = thermostat;
     this.data = data;
@@ -329,7 +329,7 @@ export class NexiaZone implements INexiaZone {
   }
 
   // Thermostat reference
-  public get thermostat(): INexiaThermostat {
+  public get thermostat(): ITraneThermostat {
     return this.thermostatRef;
   }
 

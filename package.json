@@ -1,6 +1,6 @@
 {
   "name": "trane-thermostat-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node.js TypeScript library for controlling Trane/Nexia/American Standard thermostats",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,8 +10,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint src --ext .ts --fix",
     "prepublishOnly": "npm run build",
     "type-check": "tsc --noEmit"
   },
@@ -23,7 +22,7 @@
     "typescript",
     "hvac"
   ],
-  "author": "Spencer S",
+  "author": "sbs44",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.13.4",

@@ -11,7 +11,7 @@ import {
   FanOptions
 } from '../types/api';
 import {
-  INexiaThermostat,
+  ITraneThermostat,
   INexiaZone
 } from '../types/interfaces';
 import {
@@ -36,7 +36,7 @@ import {
   ValidationError
 } from '../utils/errors';
 
-export class NexiaThermostat implements INexiaThermostat {
+export class NexiaThermostat implements ITraneThermostat {
   private readonly client: NexiaClient;
   private readonly data: ThermostatData;
   private readonly zonesMap: Map<string, INexiaZone> = new Map();

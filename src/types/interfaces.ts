@@ -32,9 +32,9 @@ export interface INexiaClient {
   isAuthenticated(): boolean;
 
   // Device discovery
-  getThermostats(): Promise<INexiaThermostat[]>;
+  getThermostats(): Promise<ITraneThermostat[]>;
   getAutomations(): Promise<INexiaAutomation[]>;
-  getThermostatById(id: string): INexiaThermostat | undefined;
+  getThermostatById(id: string): ITraneThermostat | undefined;
   getAutomationById(id: string): INexiaAutomation | undefined;
 
   // Data refresh
@@ -48,7 +48,7 @@ export interface INexiaClient {
 }
 
 // Thermostat interface
-export interface INexiaThermostat {
+export interface ITraneThermostat {
   // Identification
   readonly id: string;
   readonly name: string;
@@ -172,7 +172,7 @@ export interface INexiaZone {
   selectActiveSensors(options: SensorSelectionOptions): Promise<void>;
 
   // Thermostat reference
-  readonly thermostat: INexiaThermostat;
+  readonly thermostat: ITraneThermostat;
 
   // Validation
   validateTemperatureSetpoints(heatTemp: number, coolTemp: number): boolean;
@@ -327,7 +327,7 @@ export interface IHomebridgePlatform {
 export interface IHomebridgeAccessory {
   readonly platform: IHomebridgePlatform;
   readonly accessory: any; // PlatformAccessory
-  readonly device: INexiaThermostat | INexiaZone | INexiaSensor;
+  readonly device: ITraneThermostat | INexiaZone | INexiaSensor;
 
   setupServices(): void;
   updateCharacteristics(): void;
@@ -335,7 +335,7 @@ export interface IHomebridgeAccessory {
 
 // Type guards for runtime type checking
 export interface INexiaTypeGuards {
-  isThermostat(device: any): device is INexiaThermostat;
+  isThermostat(device: any): device is ITraneThermostat;
   isZone(device: any): device is INexiaZone;
   isSensor(device: any): device is INexiaSensor;
   isAutomation(device: any): device is INexiaAutomation;

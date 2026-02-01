@@ -12,7 +12,7 @@ import {
   NexiaClientConfig,
   UpdateOptions
 } from '../types/api';
-import { INexiaClient, INexiaThermostat, INexiaAutomation } from '../types/interfaces';
+import { INexiaClient, ITraneThermostat, INexiaAutomation } from '../types/interfaces';
 import { HttpClient, createHttpClient } from '../utils/http-utils';
 import { AuthManager, AuthConfig } from './auth';
 import { NexiaThermostat } from '../devices/nexia-thermostat';
@@ -33,7 +33,7 @@ export class NexiaClient implements INexiaClient {
   private _houseId?: number;
   // House name is stored for potential future use
   private _houseName?: string;
-  private thermostats: Map<string, INexiaThermostat> = new Map();
+  private thermostats: Map<string, ITraneThermostat> = new Map();
   private automations: Map<string, INexiaAutomation> = new Map();
   private _lastUpdate: Date | null = null;
   private isInitialized: boolean = false;
@@ -127,7 +127,7 @@ export class NexiaClient implements INexiaClient {
   /**
    * Get all thermostats
    */
-  public async getThermostats(): Promise<INexiaThermostat[]> {
+  public async getThermostats(): Promise<ITraneThermostat[]> {
     await this.ensureAuthenticated();
     return Array.from(this.thermostats.values());
   }
@@ -143,7 +143,7 @@ export class NexiaClient implements INexiaClient {
   /**
    * Get thermostat by ID
    */
-  public getThermostatById(id: string): INexiaThermostat | undefined {
+  public getThermostatById(id: string): ITraneThermostat | undefined {
     return this.thermostats.get(id);
   }
 
