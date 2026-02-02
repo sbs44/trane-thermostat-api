@@ -1,6 +1,6 @@
 {
   "name": "trane-thermostat-api",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Node.js TypeScript library for controlling Trane thermostats",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

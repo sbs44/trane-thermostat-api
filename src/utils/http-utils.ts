@@ -94,6 +94,11 @@ export class HttpClient {
   }
 
   private handleError(error: any): ApiError {
+    // If already a Trane API error type, return as-is (prevents double-wrapping)
+    if (error instanceof ApiError) {
+      return error;
+    }
+
     if (axios.isAxiosError(error)) {
       return this.handleAxiosError(error);
     }
