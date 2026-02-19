@@ -87,14 +87,14 @@ export class TraneThermostat implements ITraneThermostat {
       is_online: connectionFeature?.is_connected ?? true,
       features: {
         has_zones: false,
-        has_outdoor_temperature: false,
-        has_relative_humidity: false,
+        has_outdoor_temperature: !!rawData.has_outdoor_temperature,
+        has_relative_humidity: !!rawData.has_indoor_humidity,
         has_variable_speed_compressor: false,
         has_emergency_heat: false,
         has_variable_fan_speed: false,
-        has_dehumidify_support: false,
-        has_humidify_support: false,
-        has_air_cleaner: false
+        has_dehumidify_support: !!features.find((f: any) => f.type === 'dehumidify'),
+        has_humidify_support: !!features.find((f: any) => f.type === 'humidify'),
+        has_air_cleaner: !!features.find((f: any) => f.type === 'air_cleaner_mode')
       },
       settings: {},
       zones: [],
@@ -102,13 +102,32 @@ export class TraneThermostat implements ITraneThermostat {
       _rawFeatures: features
     };
 
-    // Extract settings from thermostat feature
+    // Extract settings from thermostat feature and device-level fields
+    const dehumidifyFeature = features.find((f: any) => f.type === 'dehumidify');
+    const humidifyFeature = features.find((f: any) => f.type === 'humidify');
+
     if (thermostatFeature) {
       transformed.settings = {
         temperature_unit: thermostatFeature.scale === 'c' ? TemperatureUnit.CELSIUS : TemperatureUnit.FAHRENHEIT,
         deadband: thermostatFeature.setpoint_delta || 3,
         system_status: thermostatFeature.system_status || thermostatFeature.status
       };
+    }
+
+    // Map device-level humidity and outdoor temperature
+    if (rawData.indoor_humidity != null) {
+      transformed.settings!.relative_humidity = parseFloat(rawData.indoor_humidity) / 100;
+    }
+    if (rawData.outdoor_temperature != null) {
+      transformed.settings!.outdoor_temperature = parseFloat(rawData.outdoor_temperature);
+    }
+
+    // Map dehumidify/humidify setpoints from feature array
+    if (dehumidifyFeature) {
+      transformed.settings!.dehumidify_setpoint = dehumidifyFeature.current_value;
+    }
+    if (humidifyFeature) {
+      transformed.settings!.humidify_setpoint = humidifyFeature.current_value;
     }
 
     return transformed;
