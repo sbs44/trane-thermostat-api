@@ -60,10 +60,12 @@ export class TraneThermostat implements ITraneThermostat {
       return rawData as ThermostatData;
     }
 
-    // Transform array-based features format
+    // Transform array-based format
+    // The raw API puts name-based items in "features" and type-based items in "settings"
     const features = Array.isArray(rawData.features) ? rawData.features : [];
+    const settingsArray = Array.isArray(rawData.settings) ? rawData.settings : [];
 
-    // Find specific feature objects
+    // Find specific feature objects (name-based, in features array)
     const advancedInfo = features.find((f: any) => f.name === 'advanced_info');
     const thermostatFeature = features.find((f: any) => f.name === 'thermostat');
     const connectionFeature = features.find((f: any) => f.name === 'connection');
@@ -92,9 +94,9 @@ export class TraneThermostat implements ITraneThermostat {
         has_variable_speed_compressor: false,
         has_emergency_heat: false,
         has_variable_fan_speed: false,
-        has_dehumidify_support: !!features.find((f: any) => f.type === 'dehumidify'),
-        has_humidify_support: !!features.find((f: any) => f.type === 'humidify'),
-        has_air_cleaner: !!features.find((f: any) => f.type === 'air_cleaner_mode')
+        has_dehumidify_support: !!settingsArray.find((f: any) => f.type === 'dehumidify'),
+        has_humidify_support: !!settingsArray.find((f: any) => f.type === 'humidify'),
+        has_air_cleaner: !!settingsArray.find((f: any) => f.type === 'air_cleaner_mode')
       },
       settings: {},
       zones: [],
@@ -103,8 +105,8 @@ export class TraneThermostat implements ITraneThermostat {
     };
 
     // Extract settings from thermostat feature and device-level fields
-    const dehumidifyFeature = features.find((f: any) => f.type === 'dehumidify');
-    const humidifyFeature = features.find((f: any) => f.type === 'humidify');
+    const dehumidifyFeature = settingsArray.find((f: any) => f.type === 'dehumidify');
+    const humidifyFeature = settingsArray.find((f: any) => f.type === 'humidify');
 
     if (thermostatFeature) {
       transformed.settings = {

@@ -4,7 +4,9 @@ module.exports = {
     if (
       name === '@types/node' ||
       name === '@types/jest' ||
-      name === 'jest'
+      name === 'jest' ||
+      name === 'eslint' ||
+      name === '@eslint/js'
     )
       return 'minor';
     return 'latest';
